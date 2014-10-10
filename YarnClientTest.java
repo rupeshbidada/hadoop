@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
+import org.apache.hadoop.yarn.api.records.YarnApplicationState;
 import org.apache.hadoop.yarn.client.api.YarnClient;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
@@ -20,6 +21,7 @@ public class YarnClientTest {
 		String app_id = null;
 		String user_id = null;
 		List<ApplicationId> user_applications = new ArrayList<ApplicationId>();
+		YarnApplicationState running_app = YarnApplicationState.RUNNING;
 		
 		YarnConfiguration conf = new YarnConfiguration();
 		YarnClient c = YarnClient.createYarnClient();
@@ -29,7 +31,7 @@ public class YarnClientTest {
 		if (type.equalsIgnoreCase("app_id")) {
 			app_id = args[1];
 			for (ApplicationReport application: c.getApplications()) {
-				if (application.getApplicationId().equals(app_id))
+				if (application.getApplicationId().equals(app_id) && application.getYarnApplicationState().equals(running_app))
 					c.killApplication(application.getApplicationId());
 			}
 		} else if (type.equalsIgnoreCase("user_id")) {
@@ -38,8 +40,10 @@ public class YarnClientTest {
 				if (application.getUser().equals(user_id))
 					user_applications.add(application.getApplicationId());
 				if (!user_applications.isEmpty()) {
-					for (ApplicationId application_id: user_applications)
-						c.killApplication(application_id);
+					for (ApplicationId application_id: user_applications) {
+						if (application.getYarnApplicationState().equals(running_app))
+							c.killApplication(application_id);
+					}
 				} else {
 					System.out.println("The user_id " + user_id + " does not have any applications associated");
 				}
